@@ -2,51 +2,69 @@
 
 ## Overview
 
-This workflow demonstrates an **agentic AI system** that converts
-product requirements into working code and automated tests using
-specialized agents coordinated by an orchestrator.
+This document describes an **agentic AI software engineering workflow**
+that converts product requirements into working code and automated
+tests.
 
-The workflow follows an iterative **Plan → Build → Validate → Improve**
-cycle.
+The system is coordinated by an **Orchestrator Agent** that manages
+specialized agents responsible for planning, coding, testing, and
+validation.
+
+The workflow follows an iterative:
+
+**Plan → Build → Validate → Improve** cycle.
+
+A key architectural rule is:
+
+> Agents do NOT call each other directly. All communication flows
+> through the **Orchestrator Agent**.
 
 ------------------------------------------------------------------------
 
-# Agent Architecture Diagram (Mermaid)
+# Agent Architecture Diagram
 
 ``` mermaid
 flowchart TD
-U[User / Product Manager]
-O[Orchestrator Agent]
 
-RA[Requirement Analysis Agent]
-AR[Architecture Planner Agent]
-CR[Context Retrieval Agent]
+User[User / Product Manager]
 
-CG[Code Generation Agent]
-TG[Test Generation Agent]
+Orchestrator[Orchestrator Agent]
 
-VA[Validation Agent]
+ReqAgent[Requirement Analysis Agent]
+ArchAgent[Architecture Planner Agent]
+ContextAgent[Context Retrieval Agent]
+
+CodeAgent[Code Generation Agent]
+TestAgent[Test Generation Agent]
+
+ValidationAgent[Validation Agent]
 
 PR[Pull Request Created]
-FB[Feedback Loop]
+FixLoop[Fix / Iteration Loop]
 
-U --> O
+User --> Orchestrator
 
-O --> RA
-O --> AR
-O --> CR
+Orchestrator --> ReqAgent
+ReqAgent --> Orchestrator
 
-RA --> CG
-AR --> CG
-CR --> CG
+Orchestrator --> ArchAgent
+ArchAgent --> Orchestrator
 
-CG --> TG
-TG --> VA
+Orchestrator --> ContextAgent
+ContextAgent --> Orchestrator
 
-VA -->|Pass| PR
-VA -->|Fail| FB
+Orchestrator --> CodeAgent
+CodeAgent --> Orchestrator
 
-FB --> CG
+Orchestrator --> TestAgent
+TestAgent --> Orchestrator
+
+Orchestrator --> ValidationAgent
+
+ValidationAgent -->|Pass| PR
+ValidationAgent -->|Fail| FixLoop
+
+FixLoop --> CodeAgent
 ```
 
 ------------------------------------------------------------------------
@@ -55,11 +73,12 @@ FB --> CG
 
 ``` mermaid
 sequenceDiagram
+
 participant User
 participant Orchestrator
 participant RequirementAgent
+participant ArchitectureAgent
 participant ContextAgent
-participant ArchitectAgent
 participant CodeAgent
 participant TestAgent
 participant ValidationAgent
@@ -70,11 +89,11 @@ User->>Orchestrator: Submit Requirement
 Orchestrator->>RequirementAgent: Analyze Requirement
 RequirementAgent-->>Orchestrator: Structured Tasks
 
-Orchestrator->>ContextAgent: Retrieve Codebase Context
-ContextAgent-->>Orchestrator: Relevant Files & Modules
+Orchestrator->>ArchitectureAgent: Create Technical Design
+ArchitectureAgent-->>Orchestrator: API + DB + UI Plan
 
-Orchestrator->>ArchitectAgent: Generate Architecture Plan
-ArchitectAgent-->>Orchestrator: API + DB + UI Design
+Orchestrator->>ContextAgent: Retrieve Codebase Context
+ContextAgent-->>Orchestrator: Relevant Files
 
 Orchestrator->>CodeAgent: Generate Implementation
 CodeAgent-->>Orchestrator: Backend + Frontend Code
@@ -82,7 +101,7 @@ CodeAgent-->>Orchestrator: Backend + Frontend Code
 Orchestrator->>TestAgent: Generate Tests
 TestAgent-->>Orchestrator: Unit + API + UI Tests
 
-Orchestrator->>ValidationAgent: Validate Code
+Orchestrator->>ValidationAgent: Validate Implementation
 
 ValidationAgent->>CI: Run Build + Tests
 CI-->>ValidationAgent: Test Results
@@ -91,8 +110,9 @@ alt Tests Pass
 ValidationAgent-->>Orchestrator: Validation Success
 Orchestrator-->>User: Pull Request Created
 else Tests Fail
-ValidationAgent-->>CodeAgent: Send Debug Feedback
-CodeAgent-->>ValidationAgent: Updated Code
+ValidationAgent-->>Orchestrator: Failure Report
+Orchestrator->>CodeAgent: Request Fix
+CodeAgent-->>Orchestrator: Updated Code
 end
 ```
 
@@ -104,25 +124,26 @@ end
 
 ### Role
 
-Controls the entire workflow and coordinates communication between
-agents.
+Central controller of the entire workflow.
 
 ### Responsibilities
 
--   Break workflow into phases
--   Assign tasks to agents
--   Track intermediate outputs
+-   Manage workflow stages
+-   Route outputs between agents
+-   Maintain execution state
 -   Handle retries and failure recovery
+-   Trigger CI/CD validation
 
-### Example Reasoning
+### Example Orchestration Logic
 
-    1. Send requirement to Requirement Analysis Agent
-    2. Request architecture plan
-    3. Retrieve relevant code context
-    4. Generate implementation code
-    5. Generate tests
-    6. Run validation
-    7. Decide merge or iteration
+    1 Receive requirement
+    2 Send to Requirement Agent
+    3 Request architecture design
+    4 Retrieve relevant code context
+    5 Generate code
+    6 Generate tests
+    7 Run validation
+    8 Decide merge or fix
 
 ------------------------------------------------------------------------
 
@@ -145,16 +166,18 @@ Convert natural language requirements into structured development tasks.
     User
 
     Functional Requirements:
-    1. Request reset link
-    2. System generates token
-    3. Token expires after defined time
-    4. User can set new password
+    1 Request reset link
+    2 Generate reset token
+    3 Validate token
+    4 Allow password update
 
     Technical Tasks:
     - Backend API
-    - Email service
     - Token storage
+    - Email notification
     - UI reset page
+
+This structured output is sent back to the **Orchestrator**.
 
 ------------------------------------------------------------------------
 
@@ -162,24 +185,23 @@ Convert natural language requirements into structured development tasks.
 
 ### Purpose
 
-Understand the existing codebase before generating new code.
+Understand the existing repository before generating new code.
 
-### Tools Used
+### Tools
 
--   Git repository search
--   Vector embeddings
+-   GitHub repository search
+-   Vector embedding search
 -   Documentation retrieval
 
-### Example
+### Example Query
 
-    Search for:
-    - authentication module
-    - email service
-    - user service
+    Search repository for:
+    authentication module
+    email service
+    user service
 
-### Output
+### Example Output
 
-    Relevant Files:
     AuthController.cs
     UserService.cs
     EmailService.cs
@@ -191,18 +213,21 @@ Understand the existing codebase before generating new code.
 
 ### Purpose
 
-Create a technical design for the requested feature.
+Translate requirements into technical architecture.
 
-### Output Example
+### Example Output
 
-    Backend APIs:
+    Backend APIs
+
     POST /auth/reset-request
     POST /auth/reset-confirm
 
-    Database:
+    Database
+
     PasswordResetToken table
 
-    Frontend Components:
+    Frontend
+
     ResetPasswordComponent
     ResetPasswordService
 
@@ -212,13 +237,12 @@ Create a technical design for the requested feature.
 
 ### Purpose
 
-Generate code aligned with existing repository structure and
-conventions.
+Generate implementation code aligned with the repository.
 
 ### Tools Used
 
 -   LLM code generator
--   Repository API
+-   Repository APIs
 -   Code templates
 
 ### Example Output
@@ -240,14 +264,14 @@ Frontend
 
 ### Purpose
 
-Automatically create tests to validate generated functionality.
+Automatically generate automated tests.
 
 ### Test Types
 
   Test Type    Tool
   ------------ -----------------------
   Unit Tests   xUnit / Jest
-  API Tests    REST testing tools
+  API Tests    REST tools
   UI Tests     Playwright / Selenium
 
 ### Example Tests
@@ -262,24 +286,25 @@ Automatically create tests to validate generated functionality.
 
 ### Purpose
 
-Ensure code quality and correctness before merging.
+Verify generated code meets quality and functional requirements.
 
 ### Validation Checks
 
-    Compile code
+    Compile project
     Run unit tests
     Run API tests
     Run UI tests
-    Lint checks
-    Security scan
-    Coverage analysis
+    Run lint checks
+    Run security scan
+    Check test coverage
 
 ### Decision Logic
 
     IF tests_pass AND coverage > 80%
-        Approve Pull Request
+    Approve Pull Request
+
     ELSE
-        Send feedback to code generation agent
+    Return failure report to Orchestrator
 
 ------------------------------------------------------------------------
 
@@ -288,6 +313,7 @@ Ensure code quality and correctness before merging.
   Category          Tools
   ----------------- -------------------------------
   LLM Engine        GPT / Claude / LLaMA
+  Agent Framework   LangGraph / CrewAI / AutoGen
   Code Search       Vector Database
   Version Control   GitHub API
   CI/CD             GitHub Actions / Jenkins
@@ -300,11 +326,11 @@ Ensure code quality and correctness before merging.
 
   Resource                     Usage
   ---------------------------- ------------------------------
-  Source Code Repository       Context for generation
-  Architecture Documentation   System design
+  Source Code Repository       Code generation context
+  Architecture Documentation   Design guidance
   Coding Standards             Maintain consistency
   Test Templates               Standardized test generation
-  Bug History                  Prevent regression
+  Bug History                  Prevent regressions
 
 ------------------------------------------------------------------------
 
@@ -313,29 +339,31 @@ Ensure code quality and correctness before merging.
 ### Code Quality Gate
 
     IF lint_errors > threshold
-        Regenerate code
+    Request regeneration from Code Agent
 
 ### Test Coverage Gate
 
     IF coverage < threshold
-        Generate additional tests
+    Generate additional tests
 
 ### CI/CD Result
 
     IF pipeline fails
-        Send logs to debugging agent
+    Send logs to Code Agent for debugging
 
 ------------------------------------------------------------------------
 
 # Final Outcome
 
-The system produces
+The system produces:
 
-    ✔ Implemented feature
-    ✔ Automated tests
-    ✔ CI/CD validation report
-    ✔ Pull request ready for review
-    ✔ Documentation updates
+    Implemented feature
+    Automated unit tests
+    API tests
+    UI tests
+    CI validation report
+    Pull request ready for review
+    Updated documentation
 
 ------------------------------------------------------------------------
 
@@ -343,7 +371,8 @@ The system produces
 
     Pull Request: Password Reset Feature
 
-    Files Added:
+    Files Generated:
+
     ResetPasswordController.cs
     ResetPasswordService.cs
     PasswordResetTokenRepository.cs
@@ -356,8 +385,8 @@ The system produces
 
 # Key Agentic Design Principles
 
-1.  Specialized agents instead of a single monolithic model
-2.  Tool usage for real-world software development actions
-3.  Iterative feedback loops
-4.  Autonomous decision points
+1.  Orchestrator-controlled workflow
+2.  Specialized agents with clear responsibilities
+3.  Tool usage for real engineering actions
+4.  Iterative feedback loops
 5.  Context-aware code generation

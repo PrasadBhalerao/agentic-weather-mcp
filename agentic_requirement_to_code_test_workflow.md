@@ -11,50 +11,90 @@ cycle.
 
 ------------------------------------------------------------------------
 
-# Architecture Diagram
+# Agent Architecture Diagram (Mermaid)
 
-                            USER
-                             │
-                             ▼
-                     Requirement Input
-                             │
-                             ▼
-                  ┌─────────────────────┐
-                  │ Orchestrator Agent  │
-                  │ (Workflow Control)  │
-                  └──────────┬──────────┘
-                             │
-          ┌──────────────────┼───────────────────┐
-          ▼                  ▼                   ▼
-    Requirement       Architecture        Context Retrieval
-    Analysis Agent     Planner Agent           Agent
-          │                  │                   │
-          ▼                  ▼                   ▼
-     Structured Tasks     System Design     Codebase Context
-          │                  │                   │
-          └───────────────┬──┴───────────────┬───┘
-                          ▼                  ▼
-                  Code Generation      Test Generation
-                       Agent                Agent
-                          │                  │
-                          ▼                  ▼
-                      Generated Code    Generated Tests
-                          │                  │
-                          └───────────┬──────┘
-                                      ▼
-                              Validation Agent
-                             (CI/CD + Quality)
-                                      │
-                             Decision / Feedback
-                         ┌─────────────┴─────────────┐
-                         ▼                           ▼
-                     Success                     Failure
-                         │                           │
-                         ▼                           ▼
-                  Pull Request Created       Feedback to Agents
-                         │
-                         ▼
-                     Final Output
+``` mermaid
+flowchart TD
+U[User / Product Manager]
+O[Orchestrator Agent]
+
+RA[Requirement Analysis Agent]
+AR[Architecture Planner Agent]
+CR[Context Retrieval Agent]
+
+CG[Code Generation Agent]
+TG[Test Generation Agent]
+
+VA[Validation Agent]
+
+PR[Pull Request Created]
+FB[Feedback Loop]
+
+U --> O
+
+O --> RA
+O --> AR
+O --> CR
+
+RA --> CG
+AR --> CG
+CR --> CG
+
+CG --> TG
+TG --> VA
+
+VA -->|Pass| PR
+VA -->|Fail| FB
+
+FB --> CG
+```
+
+------------------------------------------------------------------------
+
+# Agent Interaction Sequence Diagram
+
+``` mermaid
+sequenceDiagram
+participant User
+participant Orchestrator
+participant RequirementAgent
+participant ContextAgent
+participant ArchitectAgent
+participant CodeAgent
+participant TestAgent
+participant ValidationAgent
+participant CI
+
+User->>Orchestrator: Submit Requirement
+
+Orchestrator->>RequirementAgent: Analyze Requirement
+RequirementAgent-->>Orchestrator: Structured Tasks
+
+Orchestrator->>ContextAgent: Retrieve Codebase Context
+ContextAgent-->>Orchestrator: Relevant Files & Modules
+
+Orchestrator->>ArchitectAgent: Generate Architecture Plan
+ArchitectAgent-->>Orchestrator: API + DB + UI Design
+
+Orchestrator->>CodeAgent: Generate Implementation
+CodeAgent-->>Orchestrator: Backend + Frontend Code
+
+Orchestrator->>TestAgent: Generate Tests
+TestAgent-->>Orchestrator: Unit + API + UI Tests
+
+Orchestrator->>ValidationAgent: Validate Code
+
+ValidationAgent->>CI: Run Build + Tests
+CI-->>ValidationAgent: Test Results
+
+alt Tests Pass
+ValidationAgent-->>Orchestrator: Validation Success
+Orchestrator-->>User: Pull Request Created
+else Tests Fail
+ValidationAgent-->>CodeAgent: Send Debug Feedback
+CodeAgent-->>ValidationAgent: Updated Code
+end
+```
 
 ------------------------------------------------------------------------
 
@@ -183,13 +223,13 @@ conventions.
 
 ### Example Output
 
-Backend:
+Backend
 
     ResetPasswordController.cs
     PasswordResetService.cs
     TokenRepository.cs
 
-Frontend:
+Frontend
 
     reset-password.component.ts
     reset-password.service.ts
@@ -289,7 +329,7 @@ Ensure code quality and correctness before merging.
 
 # Final Outcome
 
-The system produces:
+The system produces
 
     ✔ Implemented feature
     ✔ Automated tests

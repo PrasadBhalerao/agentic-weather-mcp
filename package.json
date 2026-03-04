@@ -1,0 +1,10 @@
+{
+  "name": "agentic-weather-mcp",
+  "version": "1.0.0",
+  "description": "Agentic AI using MCP Weather Tool",
+  "dependencies": {
+    "axios": "^1.6.0",
+    "openai": "^4.0.0",
+    "dotenv": "^16.0.0"
+  }
+}

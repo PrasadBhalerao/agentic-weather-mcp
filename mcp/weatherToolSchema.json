@@ -1,0 +1,14 @@
+{
+  "name": "get_weather",
+  "description": "Retrieve weather conditions for a given city",
+  "input_schema": {
+    "type": "object",
+    "properties": {
+      "city": {
+        "type": "string",
+        "description": "City name"
+      }
+    },
+    "required": ["city"]
+  }
+}
